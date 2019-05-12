@@ -11,9 +11,6 @@
 import math
 from itertools import cycle
 
-def float_range(start,stop,step):
-    return [start + float(i) * (stop - start) / (float(step) - 1) for i in range(step)]
-
 class MagneticGenerator():
 
     da_ay = None
@@ -25,9 +22,10 @@ class MagneticGenerator():
         self.Da_ref = Da_ref
         self.resist = resist
         self.radius = radius
-        self.args = args
+        self.args = args    #reserved arguments
 
     def b2i(self,b=100,r=5):
+        # 将磁场换算为直导线电流
         # b: 磁场强度，pT
         # r: 测量点到导线距离，mm
         # return: 电流，mA
@@ -36,7 +34,8 @@ class MagneticGenerator():
 
         return b * r * 0.5 * 1e-5
 
-    def get_digit_value(self,b = 100, r = 5):
+    def get_digit_value(self,b = 100, r = 5, Da_bits = 12):
+        # 将磁场换算为DA的输出值
         # b: 磁场强度，pT
         # r: 测量点到导线距离，mm
         # resist: 回路电阻，Kom
@@ -45,8 +44,9 @@ class MagneticGenerator():
         # 通电直导线（无限长）磁场计算公式
         # B = u * I/r   u = 2*1e-7
 
+        da_w = 2**12 - 1
         v = self.b2i(b,r) * self.resist
-        return int(4095 * v/self.Da_ref)
+        return int(da_w * v/self.Da_ref)
 
     def suggested_resist(self,maxb = 100, dis = 10):
         # maxb: 最大的磁场强度, pT
@@ -55,18 +55,21 @@ class MagneticGenerator():
 
         return self.Da_ref/self.b2i(maxb,dis)
 
-    def gen_sin_array(self,F = 15, timerf = 1000, center_magnet = 50, amplitude = 30, phase = 0):
+    def gen_sin_array(self,F = 15, freq_coe = 100, center_magnet = 50, amplitude = 30, phase = 0):
         # F: 频率，Hz
         # timerf: 定时器频率
         # amplitude: 幅值，pT
         # phase: 初始相位，rad
 
+        F = int(15)
+        timer_freq = freq_coe * F    # 将Da定时器频率设置为目标频率100倍
+
         PI = 3.1415926
-        time_array = float_range(0,1/F,1/timerf)
+        time_array = [ii * (1/F - 1/(freq_coe*F))/(freq_coe - 1) for ii in range(freq_coe)]
         sin_array = [amplitude * math.sin(2*PI*F*t + phase) + center_magnet for t in time_array]
-        self.da_array = [self.get_digit_value(v) for v in sin_array]
+        self.da_ay = [self.get_digit_value(b) for b in sin_array]
         self.da_cycle_ay = cycle(self.da_ay)
-        return self.da_ay,self.da_cycle_ay
+        return self.da_ay,self.da_cycle_ay,timer_freq
 
 
 def demo():
@@ -74,9 +77,9 @@ def demo():
     res = mg.suggested_resist(maxb = 50)
     del mg
     mg = MagneticGenerator(resist = res)
-    mg.gen_sin_array(F = 10, timerf = 500)
+    _,dac,_ = mg.gen_sin_array(F = 10)
     for i in range(5000):
-        print(mg.da_cycle_ay.next())
+        print(next(dac))
 
 if __name__ == '__main__':
     demo()
