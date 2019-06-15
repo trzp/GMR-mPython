@@ -40,12 +40,87 @@ class caliMagCtrl():
         self.timer.deinit()
         self.dac.write(0)
         self.dac_on = 0
-        
+
     def toggle(self,freq = 5):
         if self.dac_on:
             self.stop()
         else:
             self.start(freq)
+
+
+# 标定多种磁场强度
+class caliMagCtrl2():
+    def __init__(self, freqs = [], bufs = [], ch = 1,**kwargs):
+        # freqs:待测试的频率
+        # bufs: 对应幅值的正弦序列等消息，每个元素包含(amp,buf,port)
+        # 其中port是指，使用可变电阻时对应控制的端口
+        # ch:测试信号输出端口选择
+        # kwargs: r_port,电阻选择的端口列表
+        
+        self.timer = Timer(6)
+        self.dac = DAC(ch,bits = 12)
+        self.freqs = freqs
+        self.bufs = bufs
+        self.r_adapt = False
+        if len(kwargs)>0:
+            if 'r_port' in kwargs:  #使用电阻自适应调整
+                self.r_adapt = True
+                (pyb.Pin(pin,pyb.Pin.OUT_PP) for pin in kwargs['r_port'])
+                
+        
+        self.freqs = freqs
+        self.indx = range(len(amps))
+        self.newtask = False
+
+    def next(self):
+        ind = self.indx.pop(0)
+        self.indx.append(ind)
+        
+        self.amp = self.amps[ind]
+        buf = self.bufs[ind]
+        self.freq = self.freqs[ind]
+        
+        if self.amp == 0:
+            self.timer.deinit()
+            self.dac.write(0)
+        else:
+            self.dac.write_timed(buf,self.timer,mode=DAC.CIRCULAR)
+            self.timer.init(freq = self.freq * len(buf))
+        
+        self.newtask = True
+
+
+# 标定多种磁场强度
+class caliMagCtrl1():
+    def __init__(self, amps = [], freqs = [], bufs = [], ch = 1):
+        # amps: 幅值序列
+        # bufs: 对应幅值的正弦序列
+        
+        self.timer = Timer(6)
+        self.dac = DAC(ch,bits = 12)
+        self.amps = amps
+        self.bufs = bufs
+        
+        self.freqs = freqs
+        self.indx = range(len(amps))
+        self.newtask = False
+
+    def next(self):
+        ind = self.indx.pop(0)
+        self.indx.append(ind)
+        
+        self.amp = self.amps[ind]
+        buf = self.bufs[ind]
+        self.freq = self.freqs[ind]
+        
+        if self.amp == 0:
+            self.timer.deinit()
+            self.dac.write(0)
+        else:
+            self.dac.write_timed(buf,self.timer,mode=DAC.CIRCULAR)
+            self.timer.init(freq = self.freq * len(buf))
+        
+        self.newtask = True
 
 
 # 提供计算磁场->电流->DAC数字值以及产生正弦数字序列的功能
@@ -131,13 +206,13 @@ class magGen():
         
 if __name__ == '__main__':
     m = magGen()
-    m.reset_param(radius = 2)    # 其他使用默认参数
-    r = m.sug_resist(maxb = 40)  # 求推荐的回路电阻，目标磁场范围40pT  >>> 8250
-    m.reset_param(resist = 8000) # 更新阻抗，按照实际设置的电阻设置
-    print(m.maxb)                # 查看实际的目标磁场范围  >>> 41.25
-    buf = m.gen_ay(amp = 20)     # 产生指定幅值（峰峰值）范围的正弦波序列
+    m.reset_param(radius = 10)    # 其他使用默认参数
+    r = m.sug_resist(maxb = 100)  # 求推荐的回路电阻，目标磁场范围100pT  >>> 660
+    print(r)
+    m.reset_param(resist = 600)   # 更新阻抗，按照实际设置的电阻设置
+    print(m.maxb)                 # 查看实际的目标磁场范围  >>> 110
+    buf = m.gen_ay(amp = 100)     # 产生指定幅值（峰峰值）范围的正弦波序列
     from matplotlib import pyplot as plt    #绘图查看效果
     buf = list(buf)
     plt.plot(range(len(buf)),buf)
     plt.show()
-    
