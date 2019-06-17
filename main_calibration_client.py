@@ -23,6 +23,10 @@ from maggen import magGen
 # com2 -> 1.1MOhm -> X2
 # 传感器探头距离导线距离为11.3mm
 
+def tick(timer):                # we will receive the timer object when being called
+    print(timer.counter())
+
+
 def main():
     ## 预生成待测试的DAC序列
     m = magGen()
@@ -53,14 +57,14 @@ def main():
     
     freqs = [5,13]
     ch = 1            # 对应X5
-    repeat = 10
+    repeat = 2
     timer_num = 6
     mctrl = magCtrl(bufs,freqs,ch,sync,rw,repeat,timer_num)
 
-    ## timer3,用于循环测试
+    # timer3,用于循环测试
     tim3 = Timer(3)
     tim3.init(freq = 0.2)
-    tim3.callback(lambda t:mctrl.next())
+    tim3.callback(mctrl.next)
 
 
 if __name__ == '__main__':
