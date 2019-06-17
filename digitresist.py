@@ -70,7 +70,7 @@ class digitResistance():
 
         if self.CSpin is not None:  # 随时保存 INC高电平，CS上升沿
             self.INCpin.high()
-            time.sleep_us(1)
+            time.sleep_us(2)
             self.CSpin.high()
 
         if self.resist >= self.maxresist:   self.resist = self.maxresist
@@ -80,17 +80,15 @@ class digitResistance():
 # demo
 if __name__ == '__main__':
     import pyb
-    UD = pyb.Pin('X1',pyb.Pin.OUT_PP)
-    INC = pyb.Pin('X2',pyb.Pin.OUT_PP)
-    CS = pyb.Pin('X3',pyb.Pin.OUT_PP)
+    INC = pyb.Pin('X6',pyb.Pin.OUT_PP)
+    UD = pyb.Pin('X7',pyb.Pin.OUT_PP)
+    CS = pyb.Pin('X8',pyb.Pin.OUT_PP)
     
-    dr = digitResistance(UD,INC,CS=CS)
-    r = dr.sliding_resist(10,1)
-    print(r)
-    time.sleep(1)
+    # 实测发现，数字电位计误差较大，因此，最大最小值应当以实测为准
+    # dr = digitResistance(UD,INC,minresist = 36, maxresist = 97.6*1e3, CS=CS)  # 1# 电位计
+    dr = digitResistance(UD,INC,minresist = 37.6, maxresist = 86.5*1e3, CS=CS)  # 2# 电位计
     r = dr.set_resist(50000)
     print(r)
-    pyb.LED(1).on()
 
 
 
