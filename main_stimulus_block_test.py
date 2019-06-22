@@ -54,16 +54,16 @@ def main():
     record_sig = syncSignal(pyb.Pin('X3',pyb.Pin.OUT_PP)) # X3 对应光耦IN1
     sync_sig = syncSignal(pyb.Pin('X4',pyb.Pin.OUT_PP)) # X4 对应光耦IN2
     
-    freqs = [5,13]
+    freqs = [5]
     ch = 1            # X5 标定磁场输出
-    repeat = 2
+    repeat = 1
     timer_num = 6
     mctrl = magCtrl(bufs,freqs,ch,sync_sig,rw,repeat,timer_num)
 
     record_sig.falling_edge()   # 发送启动记录的信号
     led = ledCue()
 
-    # timer3,用于循环测试
+    ## timer3,用于循环测试
     tim3 = Timer(3)
     tim3.init(freq = 0.2)
     tim3.callback(mctrl.next)

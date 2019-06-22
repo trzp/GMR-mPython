@@ -113,7 +113,7 @@ class magCtrl():
         if not self.end_flg:
             freq = self.freqs[self.fre_indx]
             s,self.stimulus_typ,buf = self.bufs[self.buf_indx]
-            self.rset.resist_set(typ)          # 设置对应档位的回路电阻
+            self.rset.resist_set(self.stimulus_typ)          # 设置对应档位的回路电阻
             print('new trial:',s,'pT ',freq,'Hz')
 
             self.buf_indx += 1
