@@ -19,21 +19,21 @@ import time
 class resistSwitch():
     # 用于根据磁场强度切换回路电阻以及切断回路
 
-    def __init__(self,com1 = pyb.Pin('X1'),com2 = pyb.Pin('X2')):
-        # com1 对应大电阻，小电流
-        self.com1 = com1
-        self.com2 = com2
+    def __init__(self,**kwargs):
+        self.big_resist = kwargs['big_resist_pin']
+        self.tiny_resist = kwargs['tiny_resist_pin']
 
-    def resist_set(self,typ = 'big'):   # big,tiny,cut
-        if typ == 'tiny':   # 弱
-            self.com1.high()
-            self.com2.low()
-        elif typ == 'big':  # 强
-            self.com1.low()
-            self.com2.high()
+    def resist_set(self,typ):   # big,tiny,cut
+        print(typ)
+        if typ == 'tinymag':   # 弱
+            self.big_resist.high()
+            self.tiny_resist.low()
+        elif typ == 'bigmag':  # 强
+            self.big_resist.low()
+            self.tiny_resist.high()
         elif typ == 'cut':  # 切断
-            self.com1.low()
-            self.com2.low()
+            self.big_resist.low()
+            self.tiny_resist.low()
         else:
             raise SyntaxError('resist key should be big or tiny')
 
@@ -42,6 +42,7 @@ class syncSignal():
 
     def __init__(self,port = pyb.Pin('X1')):
         self.port = port
+        self.port.low()
     
     def raising_edge(self):
         self.port.low()
@@ -51,9 +52,9 @@ class syncSignal():
     
     def falling_edge(self):
         self.port.high()
-        time.sleep_us(1)
+        time.sleep_us(10)
         self.port.low()
-        time.sleep_us(1)
+        time.sleep_us(10)
 
 class ledSign():
     # 使用LED展示正在进行试验的block
@@ -62,7 +63,7 @@ class ledSign():
         self.indx = [0,1,2]
         self.ind = -1
 
-    def next(self,typ):
+    def next(self,typ = ''):
         if typ == 'cut':
             pyb.LED(1).off()
             pyb.LED(2).off()
@@ -115,6 +116,7 @@ class magCtrl():
             self.rset.resist_set(typ)          # 设置对应档位的回路电阻
             self.led.next(typ)                 # 指示灯切换
             print('new trial:',s,'pT ',freq,'Hz')
+            print(typ)
             
             self.buf_indx += 1
             if self.buf_indx == self.buf_len:

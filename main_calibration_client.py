@@ -19,8 +19,8 @@ from maggen import magGen
 
 # 本程序用于发生标定磁场
 # 模拟开关用于控制两组回路电阻
-# com1 -> 9.3MOhm -> X1
-# com2 -> 1.1MOhm -> X2
+# com2 -> 9.3MOhm
+# com1 -> 1.1MOhm
 # 传感器探头距离导线距离为11.3mm
 
 def tick(timer):                # we will receive the timer object when being called
@@ -36,21 +36,21 @@ def main():
     m.reset_param(resist = 1100)   #1.1MOhm 磁场范围约为50pT
     for s in [10,20,30,40,50]:
         buf = m.gen_ay(s)
-        bufs.append((s,'big',buf))
+        bufs.append((s,'bigmag',buf))
 
     bufs.append((0,'cut',array('H',[0])))
 
     m.reset_param(resist = 9300)   #9.3MOhm 磁场范围约为5pT
     for s in [1,2,3,4,5]:
         buf = m.gen_ay(s)
-        bufs.append((s,'big',buf))
+        bufs.append((s,'tinymag',buf))
 
     bufs.append((0,'cut',array('H',[0])))
     
     ## 创建测试磁场对象，统一分配引脚
-    com1 = pyb.Pin('X1',pyb.Pin.OUT_PP) # 对应大电阻，弱磁场
-    com2 = pyb.Pin('X2',pyb.Pin.OUT_PP) # 对应小电阻
-    rw = resistSwitch(com1,com2)
+    tiny = pyb.Pin('X1',pyb.Pin.OUT_PP) # 对应小电阻,  接CM1
+    big = pyb.Pin('X2',pyb.Pin.OUT_PP) # 对应大电阻,  接CM2
+    rw = resistSwitch(big_resist_pin = big,tiny_resist_pin = tiny)
     
     sport = pyb.Pin('X3',pyb.Pin.OUT_PP) # 对应光耦IN1
     sync = syncSignal(sport)
