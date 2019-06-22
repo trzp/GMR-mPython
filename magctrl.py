@@ -24,7 +24,6 @@ class resistSwitch():
         self.tiny_resist = kwargs['tiny_resist_pin']
 
     def resist_set(self,typ):   # big,tiny,cut
-        print(typ)
         if typ == 'tinymag':   # 弱
             self.big_resist.high()
             self.tiny_resist.low()
@@ -56,7 +55,7 @@ class syncSignal():
         self.port.low()
         time.sleep_us(10)
 
-class ledSign():
+class ledCue():
     # 使用LED展示正在进行试验的block
     
     def __init__(self):
@@ -78,7 +77,6 @@ class ledSign():
     def end(self):
         for i in range(1,5,1):
             pyb.LED(i).on()
-        print('test ended')
 
 
 class magCtrl():
@@ -107,17 +105,17 @@ class magCtrl():
         self.repeat = repeat
         self.rcount = 0
         self.end_flg = False
-        self.led = ledSign()
+        self.new_block = False
+        self.stimulus_typ = ''
 
     def next(self,t):
+        self.new_block = True
         if not self.end_flg:
             freq = self.freqs[self.fre_indx]
-            s,typ,buf = self.bufs[self.buf_indx]
+            s,self.stimulus_typ,buf = self.bufs[self.buf_indx]
             self.rset.resist_set(typ)          # 设置对应档位的回路电阻
-            self.led.next(typ)                 # 指示灯切换
             print('new trial:',s,'pT ',freq,'Hz')
-            print(typ)
-            
+
             self.buf_indx += 1
             if self.buf_indx == self.buf_len:
                 self.buf_indx = 0
@@ -127,10 +125,8 @@ class magCtrl():
                     self.rcount += 1
                     if self.rcount == self.repeat:
                         self.end_flg = True
-                        self.led.end()
             
             self.timer.deinit()
-            # time.sleep_us(1000)
             self.dac.write_timed(buf,self.timer,mode=DAC.CIRCULAR) #启动定时器，写DAC
             self.timer.init(freq = freq * len(buf))
             self.sync.falling_edge()                          # 发送同步信号
