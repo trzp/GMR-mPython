@@ -43,6 +43,21 @@ def generate_bufs():
 
     bufs.append((0,'cut',array('H',[0]))) # 切断输出
     return bufs
+    
+def generate_bufs():
+    ## 预生成待测试的DAC序列
+    m = magGen()
+    m.reset_param(radius = 2)
+    bufs = []
+
+    m.reset_param(resist = 0.75)   #1.1MOhm 磁场范围约为0.43uT,即0.43*1e6
+    for s in [0.2*1e6,0.4*1e6]:
+        buf = m.gen_ay(s)
+        bufs.append((s,'bigmag',buf))
+
+    bufs.append((0,'cut',array('H',[0])))  # 切断输出
+
+    return bufs
 
 def main():
     ## 创建测试磁场对象，统一分配引脚
@@ -54,9 +69,9 @@ def main():
     record_sig = syncSignal(pyb.Pin('X3',pyb.Pin.OUT_PP)) # X3 对应光耦IN1
     sync_sig = syncSignal(pyb.Pin('X4',pyb.Pin.OUT_PP)) # X4 对应光耦IN2
     
-    freqs = [5]
+    freqs = [10]
     ch = 1            # X5 标定磁场输出
-    repeat = 1
+    repeat = 20
     timer_num = 6
     mctrl = magCtrl(bufs,freqs,ch,sync_sig,rw,repeat,timer_num)
 
@@ -65,7 +80,7 @@ def main():
 
     ## timer3,用于循环测试
     tim3 = Timer(3)
-    tim3.init(freq = 0.2)
+    tim3.init(freq = 0.1)
     tim3.callback(mctrl.next)
 
     while not mctrl.end_flg:

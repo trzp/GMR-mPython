@@ -15,32 +15,11 @@ from pyb import DAC
 from pyb import Timer
 import time
 
-
-class resistSwitch():
-    # 用于根据磁场强度切换回路电阻以及切断回路
-
-    def __init__(self,**kwargs):
-        self.big_resist = kwargs['big_resist_pin']
-        self.tiny_resist = kwargs['tiny_resist_pin']
-
-    def resist_set(self,typ):   # big,tiny,cut
-        if typ == 'tinymag':   # 弱
-            self.big_resist.high()
-            self.tiny_resist.low()
-        elif typ == 'bigmag':  # 强
-            self.big_resist.low()
-            self.tiny_resist.high()
-        elif typ == 'cut':  # 切断
-            self.big_resist.low()
-            self.tiny_resist.low()
-        else:
-            raise SyntaxError('resist key should be big or tiny')
-
 class syncSignal():
     # 用于通过光耦发送同步信号
 
-    def __init__(self,port = pyb.Pin('X1')):
-        self.port = port
+    def __init__(self,port):
+        self.port = pyb.Pin(port,pyb.Pin.OUT_PP)
         self.port.low()
     
     def raising_edge(self):
@@ -81,7 +60,7 @@ class ledCue():
 
 class magCtrl():
 
-    def __init__(self,bufs,freqs,ch,sync,resistset,repeat = 50,timer_num = 6):
+    def __init__(self,bufs,freqs,DAC_ch,sync,BoardCtrl,repeat = 50,timer_num = 6):
         '''
         bufs: list, DAC output array
         typ: list, the same length with bufs, 'tiny','big','cut' to describe which type of the buf
@@ -94,9 +73,16 @@ class magCtrl():
 
         self.bufs = bufs
         self.freqs = freqs
-        self.dac = DAC(ch,bits = 12)
+
+        if DAC_ch == 'X5':
+            self.dac = DAC(1,bits = 12)
+        elif DAC_ch == 'X6':
+            self.dac = DAC(2,bits = 12)
+        else:
+            raise ValueError('DAC pin should be X5 or X6')
+
         self.sync = sync
-        self.rset = resistset
+        self.boardctrl = BoardCtrl
         self.timer = Timer(timer_num)
         self.buf_indx = 0
         self.fre_indx = 0
@@ -106,14 +92,14 @@ class magCtrl():
         self.rcount = 0
         self.end_flg = False
         self.new_block = False
-        self.stimulus_typ = ''
+        self.stimulus_level = 0
 
     def next(self,t):
         self.new_block = True
         if not self.end_flg:
             freq = self.freqs[self.fre_indx]
-            s,self.stimulus_typ,buf = self.bufs[self.buf_indx]
-            self.rset.resist_set(self.stimulus_typ)          # 设置对应档位的回路电阻
+            s,self.stimulus_level,buf = self.bufs[self.buf_indx]
+            self.boardctrl.update(self.stimulus_level)
             print('new trial:',s,'pT ',freq,'Hz')
 
             self.buf_indx += 1
